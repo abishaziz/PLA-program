@@ -1,0 +1,518 @@
+#include<iostream>
+#include<cmath>
+using namespace std;
+struct minterms						// Structure to store each of the minterms and its details
+{
+	int num;
+	int bin[20];
+	int countOne;
+	bool check=false;
+};
+struct function						//Structure to store the prime implicants of a function and it's compliment
+{
+	int term[20];
+	int term0[20];
+	int v;
+};
+int var,maxV,fu,fno,mt,s=0,d,plaSMin=9999,plaCode,sz;
+struct function func[20][200],pla[100];
+struct minterms minT[100];
+struct minterms table1[500];
+struct minterms table2[500];
+int begin();						//All the structure variables are assigned user defined default values
+int reset1();						//Assign the user defined default values to minT array of structure minterms
+int reset2();						//Assign the user defined default values to func array of structure function
+int reset3();						//Assign the user defined default values to pla array of structure function
+int sort();						//Sort the minterms according to number of ones in it's binary
+int swap(int i,int j);					//Swap two elements of structure minterms
+int pairing1(minterms temp[500],int size);		//Pairing of elements for Tabular form Realisation
+int pairing2(minterms temp[500],int size);		//Pairing of elements for Tabular form Realisation
+int mintermDetail();					//Find necessary information related to each minterms
+int functionMinimization();				//Remove repeated elements from function formed
+int plaMinimize(int t);					//Remove repeated elements from PLA elements
+int plaSelection();					//Select the best combination of each function and it's compliments for PLA table
+int plaFinal();						//Form the PLA terms array from the best case found 
+int plaDisplay();					//Display PLA Table
+int pairing1(minterms temp[500],int size)
+{
+	for(int i=0;i<size;i++)	
+		temp[i].check=false;
+	int count,pos,l=0;
+	for(int i=0;i<size;i++)
+	{
+		for(int j=i+1;j<size;j++)
+		{
+			if(temp[j].countOne==temp[i].countOne+1)			//Check for pair only when difference in number of counts is 1
+			{
+				count=0;
+				for(int k=0;k<var;k++)
+				{
+					if(temp[i].bin[k]!=temp[j].bin[k])		//To count number of disimilarities in binary form
+					{
+						count++;
+						pos=k;
+					}
+				}
+				if(count==1)						//If only one disimilarity found
+				{
+					table1[l]=temp[i];
+					table1[l].bin[pos]=9;
+					l++;
+					temp[i].check=true;
+					temp[j].check=true;
+				}
+			}
+		}
+	}
+	for(int i=0;i<size;i++)	
+		if(temp[i].check==false)						//Store the elements in tabular form which are not ticked
+		{
+			for(int j=0;j<var;j++)
+				func[fno][sz].term[j]=temp[i].bin[j];
+			sz++;
+		}
+	if(l!=0)									//Call the pairing function if pairing can be done
+		pairing2(table1,l);
+}
+int pairing2(minterms temp[500],int size)
+{
+	for(int i=0;i<size;i++)
+		temp[i].check=false;
+	int count,pos,l=0;
+	for(int i=0;i<size;i++)
+	{
+		for(int j=i+1;j<size;j++)
+		{
+			if(temp[j].countOne==temp[i].countOne+1)			//Check for pair only when difference in number of counts is 1
+			{
+				count=0;
+				for(int k=0;k<var;k++)
+				{
+					if(temp[i].bin[k]!=temp[j].bin[k])		//To count number of disimilarities in binary form
+					{
+						count++;
+						pos=k;
+					}
+				}
+				if(count==1)						//If only one disimilarity found
+				{
+					table2[l]=temp[i];
+					table2[l].bin[pos]=9;
+					l++;
+					temp[i].check=true;
+					temp[j].check=true;
+				}
+			}
+		}
+	for(int i=0;i<size;i++)
+		if(temp[i].check==false)						//Store the elements in tabular form which are not ticked
+		{
+			for(int j=0;j<var;j++)
+				func[fno][sz].term[j]=temp[i].bin[j];
+			sz++;
+		}
+	}
+	cout<<endl;
+	if(l!=0)									//Call the pairing function if pairing can be done
+		pairing1(table2,l);
+}
+int swap(int i,int j)									//swapping function
+{
+	struct minterms tem;
+	tem=minT[i];
+	minT[i]=minT[j];
+	minT[j]=tem;
+}
+int sort()
+{
+	int min,temp;
+	for(int i=0;i<mt-1;i++)
+	{
+		min=i;
+		for(int j=0;j<mt-1-i;j++)
+			if(minT[j].countOne>minT[j+1].countOne)				//Swap according to number of ones in binary form
+				swap(j,j+1);
+	}
+}
+int reset1()
+{
+	for(int i=0;i<100;i++)								//Assign User defined Default values
+	{
+		for(int j=0;j<20;j++)
+			minT[i].bin[j]=0;
+		minT[i].countOne=0;
+		minT[i].num=0;
+		minT[i].check=false;
+	}
+}
+int reset2()
+{
+	for(int j=0;j<200;j++)								//Assign User defined Default values
+	{
+		for(int k=0;k<20;k++)
+		{
+			func[fno][j].term[k]=9;
+		}
+	}
+}
+int reset3()
+{	
+	for(int j=0;j<100;j++)								//Assign User defined Default values
+	{
+		for(int k=0;k<20;k++)
+		{
+			pla[j].term[k]=9;
+		}
+	}
+}
+int begin()
+{
+	for(int i=0;i<20;i++)								//Assign User defined Default values
+	{
+		for(int j=0;j<20;j++)
+			pla[i].term[j]=9;
+		for(int j=0;j<200;j++)
+			for(int k=0;k<20;k++)
+			{
+				func[i][j].term[k]=9;
+				func[i][j].term0[k]=9;
+			}
+	}
+}
+int mintermDetail()
+{
+	for(int i=0;i<mt;i++)
+	{
+		for(int n=minT[i].num,j=var-1;n>0;n/=2,j--)
+		{
+			minT[i].bin[j]=n%2;						//Converts number to its Binary form
+			if(n%2==1)
+				minT[i].countOne++;					//Counts number of ones in binary form
+		}
+	}
+}
+int functionMinimization()
+{
+	for(int i=0;i<sz;i++)
+	{
+		for(int j=i+1;j<sz;j++)
+		{
+			int co=0;
+			for(int k=0;k<var;k++)
+			{
+				if(func[fno][i].term[k]==func[fno][j].term[k])		//Put Repeated elements at the end of array
+					co++;
+			}
+			if(co==var)
+				func[fno][j--]=func[fno][--sz];				//Decrease the size of array to remove repeated elements
+		}
+	}
+}
+int plaMinimize(int t)
+{
+	int co;
+	for(int i=0;i<t;i++)
+	{
+		for(int j=i+1;j<t;j++)
+		{
+			co=0;
+			for(int k=0;k<20;k++)
+			{
+				if(pla[i].term[k]==pla[j].term[k])			//Put Repeated elements at the end of array
+					co++;
+			}
+			if(co==20)
+				pla[j--]=pla[--t];					//Decrease the size of array to remove repeated elements
+		}
+	}
+	return t;
+}
+int plaSelection()
+{
+	for(int i=0;i<pow(2,fu);i++)
+	{
+		d=0;
+		reset3();
+		for(int k=0;k<fu;k++)							//Make all possible cases of function and it's compliments
+		{
+			int a=pow(2,k);
+			int b=(i/a)%2;
+			for(int j=0;j<((b==0)?(func[k][1].v):(func[k][2].v));j++)
+			{
+				for(int l=0;l<20;l++)
+				{
+					if(b==0)
+						pla[d].term[l]=func[k][j].term0[l];
+					else
+						pla[d].term[l]=func[k][j].term[l];
+				}
+				d++;
+			}
+		}
+		d=plaMinimize(d);
+		if(d<plaSMin)								//Find the size of smallest PLA array
+		{
+			plaSMin=d;
+			plaCode=i;
+		}	
+	}
+}
+int plaFinal()
+{
+	d=0;
+	reset3();
+	for(int k=0;k<fu;k++)
+	{
+		int a=pow(2,k);
+		int b=(plaCode/a)%2;
+		for(int i=0;i<((b==0)?(func[k][1].v):(func[k][2].v));i++)
+		{
+			for(int j=0;j<20;j++)
+			{
+				if(b==0)
+					pla[d].term[j]=func[k][i].term0[j];
+				else
+					pla[d].term[j]=func[k][i].term[j];
+			}
+			pla[d].v=func[k][0].v;						//Form the PLA array from best case 				
+			d++;
+		}
+	}
+}
+int plaDisplay()
+{
+	cout<<endl<<endl<<"\t\t\t\t   PLA Table"<<endl<<endl;				//Display PLA table
+	cout<<"\t\t| Product terms |\tInput\t\t|\tOutput"<<endl;
+	cout<<"\t\t|\t\t|\t";
+	for(int i=0;i<maxV;i++)
+		cout<<(char)(97+i);
+	cout<<"\t\t|";
+	for(int i=0;i<fu;i++)
+		cout<<"\tF"<<i+1;
+	cout<<endl;
+	cout<<"-----------------------------------------------------------------------------------------------------------------"<<endl;
+	for(int i=0;i<d;i++)
+	{
+		cout<<"  ";
+		for(int j=0;j<pla[i].v;j++)						//Display PLA table product terms
+		{
+			if(pla[i].term[j]==1)
+				cout<<(char)(65+j);
+			if(pla[i].term[j]==0)
+				cout<<(char)(97+j);
+		}
+		cout<<"\t\t|\t"<<i+1<<"\t|\t";						//Display Number for each product term
+		for(int j=0;j<pla[i].v;j++)						//Display the presence or absence of Input terms in product terms
+		{
+			if(pla[i].term[j]==9)
+				cout<<"_";
+			else
+				cout<<pla[i].term[j];
+		}
+		cout<<"\t\t|\t";
+		for(int j=0;j<fu;j++)							//Display occurence of product term in each Function
+		{
+			bool cond1=false;
+			int a=pow(2,j);
+			int b=(plaCode/a)%2;
+			for(int k=0;k<200;k++)
+			{
+				bool cond2=true;
+				for(int h=0;h<20;h++)
+				{
+					if(b==0)
+					{
+						if(pla[i].term[h]!=func[j][k].term0[h])
+							cond2=false;
+					}
+					else
+					{
+						if(pla[i].term[h]!=func[j][k].term[h])
+							cond2=false;
+					}
+				}
+				if(cond2)
+				{
+					cout<<"1\t";
+					cond1=true;
+					break;
+				}
+			}
+			if(!cond1)
+			{
+				cout<<"-\t";
+			}
+		}
+		cout<<endl;
+	}
+	cout<<"-----------------------------------------------------------------------------------------------------------------"<<endl;
+	cout<<"\t\t\t\t\t\t\t|\t";
+	for(int k=0;k<fu;k++)
+	{
+		int a=pow(2,k);
+		int b=(plaCode/a)%2;
+		if(b==0)
+			cout<<"T\t";
+		else
+			cout<<"C\t";
+	}
+	cout<<"(T=True/C=compliment)\n";
+	cout<<"\n\n";
+	cout<<"\t\t\t\t                                                                  _\n";
+	cout<<"\t\t\t\t(NOTE:- The variable and their compliments are denoted as a=A and a=a\n";		//Print format of PLA table
+	cout<<"\n\n";
+}
+int main()
+{
+	begin();
+	int co;
+	cout<<"\n\nEnter the number of function : ";
+	cin>>fu;									//Input for total number of functions
+	cout<<endl;
+	for(fno=0;fno<fu;fno++)
+	{
+		sz=0;
+		reset1();
+		cout<<"\nFor Function no. "<<fno+1<<endl;
+		cout<<"\tEnter the number of variables : ";
+		cin>>var;								//Input number of variables for each function
+		func[fno][0].v=var;							//Store value of number of variable
+		if(var>maxV)
+			maxV=var;
+		cout<<"\tEnter the number of minterms : ";
+		cin>>mt;								//Input for number of minterms
+		cout<<"\tEnter the minterms one by one : ";
+		for(int i=0;i<mt;i++)
+			cin>>minT[i].num;						//Input for minterms
+		bool che=false;
+		cout<<"\t";
+		for(int i=0;i<mt;i++)							
+		{
+			if(minT[i].num<0||minT[i].num>=pow(2,var))			//Exclude the out of bound input of minterms
+			{
+				cout<<minT[i].num<<", ";
+				minT[i--]=minT[--mt];
+				che=true;
+			}
+		}
+		for(int i=0;i<mt;i++)
+		{
+			for(int j=i+1;j<mt;j++)
+			{
+				if(minT[i].num==minT[j].num)
+					minT[j--]=minT[--mt];
+			}
+		}
+		for(int i=0;i<mt-1;i++)
+		{
+			for(int j=0;j<mt-1-i;j++)
+				if(minT[j].num>minT[j+1].num)
+				{
+					struct minterms te;
+					te=minT[j];
+					minT[j]=minT[j+1];
+					minT[j+1]=te;
+				}
+		}	
+		if(che)
+		{
+			cout<<"\b\b found out of bounds minterms. Lets exclude them\n";
+		}
+		if(!che)
+		{
+			cout<<"No minterms out of bound\n";
+		}
+		cout<<"\n\tMinterms of F"<<fno+1<<" are  ";				//Print Function all minterms
+		for(int i=0;i<mt;i++)
+			cout<<minT[i].num<<", ";
+		cout<<"\b\b "<<endl;
+		mintermDetail();
+		sort();
+		pairing1(minT,mt);
+		functionMinimization();
+		for(int i=0;i<200;i++)							//Transfer function to another variables of same type
+		{
+			for(int k=0;k<20;k++)
+			{
+				func[fno][i].term0[k]=func[fno][i].term[k];
+			}
+		}
+		cout<<"\n";
+		reset2();
+		cout<<"\t\t\t\tF"<<fno+1<<" =  ";
+		if(mt==(int)pow(2,var))
+			cout<<"1 \n";
+		else if(mt==0)
+			cout<<"0 \n";
+		else
+		{
+			for(int i=0;i<sz;i++)						//Print the function
+			{
+				for(int j=0;j<var;j++)
+				{
+					if(func[fno][i].term0[j]==1)
+						cout<<(char)(65+j);
+					if(func[fno][i].term0[j]==0)
+						cout<<(char)(97+j);
+				}
+				cout<<" + ";
+			}
+			cout<<"\b\b "<<endl;
+		}
+		func[fno][1].v=sz;							//Store the number of product terms of Function			
+		struct minterms temp[100];
+		bool ch;
+		int a=0;
+		for(int i=0;i<pow(2,var);i++)
+		{
+			ch=false;
+			for(int j=0;j<mt;j++)
+			{
+				if(minT[j].num==i)
+					ch=true;
+			}
+			if(!ch)
+				temp[a++].num=i;
+		}
+		cout<<"\t            __"<<endl;
+		cout<<"\tMinterms of F"<<fno+1<<" are  ";
+		for(int i=0;i<a;i++)							//Print Compliment of Function all minterms
+			cout<<temp[i].num<<", ";
+		cout<<"\b\b "<<endl;
+		sz=0;
+		reset1();
+		mt=a;
+		for(int i=0;i<a;i++)
+			minT[i].num=temp[i].num;
+		mintermDetail();
+		sort();
+		pairing1(minT,mt);
+		functionMinimization();
+		cout<<"\t\t\t\t__"<<endl;
+		cout<<"\t\t\t\tF"<<fno+1<<" = ";
+		if(mt==(int)pow(2,var))
+			cout<<"1 \n";
+		else if(mt==0)
+			cout<<"0 \n";
+		else
+		{
+			for(int i=0;i<sz;i++)						//Print Compliment of function
+			{
+				for(int j=0;j<var;j++)
+				{
+					if(func[fno][i].term[j]==1)
+						cout<<(char)(65+j);
+					if(func[fno][i].term[j]==0)
+						cout<<(char)(97+j);
+				}
+				cout<<" + ";
+			}
+			cout<<"\b\b "<<endl;
+		}
+		func[fno][2].v=sz;							//Store number of product terms of compliment of array
+	}
+	plaSelection();
+	plaFinal();
+	d=plaMinimize(d);
+	plaDisplay();
+}
